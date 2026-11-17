@@ -16,7 +16,7 @@ Demo accounts (password `admin123`): `super@kaliakair.gov.bd` (TOTP demo code 12
 
 - `/admin` – staff portal (login at `/admin/login`)
 - `/agent` – field-agent web app (login `agent1@kaliakair.gov.bd` / `agent123`): 4-step registration, own submissions only, works offline (installable PWA; the service worker is active in `yarn build && yarn start`)
-- `/citizen` – citizen web app (next phase)
+- `/citizen` – citizen web app: sign in with mobile number + PIN (first time: ration card number + new PIN), monthly allowance, apply for products, track, pickup QR + 6-digit code, confirm collection, history. Demo accounts are listed on the sign-in screen (seeded PIN `1234`).
 
 ## Design
 

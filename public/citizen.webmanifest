@@ -1,0 +1,11 @@
+{
+  "name": "রেশন সেবা – নাগরিক",
+  "short_name": "রেশন সেবা",
+  "start_url": "/citizen",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f2efe9",
+  "theme_color": "#1f4d58",
+  "lang": "bn",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

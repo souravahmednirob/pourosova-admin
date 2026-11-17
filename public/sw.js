@@ -1,9 +1,9 @@
 /* Kaliakair ration service — offline support for the field-agent and citizen apps.
    Static build assets: cache-first. Pages and RSC payloads: network-first, fall back to cache. */
-const VERSION = "kp-v1";
+const VERSION = "kp-v2";
 const STATIC = `${VERSION}-static`;
 const PAGES = `${VERSION}-pages`;
-const PRECACHE = ["/agent", "/agent/new", "/agent/login", "/citizen", "/manifest.webmanifest", "/icon.svg"];
+const PRECACHE = ["/agent", "/agent/new", "/agent/login", "/citizen", "/citizen/login", "/citizen/products", "/citizen/cart", "/citizen/orders", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

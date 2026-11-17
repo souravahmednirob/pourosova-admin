@@ -6,7 +6,6 @@ export const metadata: Metadata = {
   title: "নাগরিক রেশন সেবা – কালিয়াকৈর পৌরসভা",
   description: "কালিয়াকৈর পৌরসভার ভর্তুকিযুক্ত নিত্যপণ্য বিতরণ ব্যবস্থাপনা পোর্টাল",
   applicationName: "নাগরিক রেশন সেবা",
-  manifest: "/manifest.webmanifest",
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 

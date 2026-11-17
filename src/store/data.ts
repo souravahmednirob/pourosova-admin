@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { buildSeed, SEED_VERSION, type SeedData } from "@/lib/seed";
 import { pad, uid } from "@/lib/utils";
-import { bn } from "@/lib/bn";
+import { bn, fmtDateTime } from "@/lib/bn";
 import type { AuditEntry, Citizen, Notification, Order, OrderItem, Product, StockMovement, User } from "@/lib/types";
 
 export class RuleError extends Error {
@@ -55,6 +55,7 @@ interface DataState extends SeedData {
   // misc
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
+  setCitizenPin: (citizenId: string, pinHash: string) => void;
   resetSeed: () => void;
   // selectors
   monthlyUsage: (citizenId: string, productId: string, ref?: Date) => number;
@@ -145,7 +146,7 @@ export const useData = create<DataState>()(
           citizens: s.citizens.map((x) => (x.id === id ? next : x)),
           counters,
           audit: [...s.audit, audit(by, "নিবন্ধন অনুমোদন", "citizen", id, { status: c.status }, { status: "APPROVED", rationCardNo: next.rationCardNo })],
-          notifications: [notif(c.id, "ORDER_APPROVED", `আপনার নিবন্ধন অনুমোদিত হয়েছে। রেশন কার্ড নম্বর ${next.rationCardNo}`), ...s.notifications.filter((n) => n.link !== `/admin?citizen=${id}`)],
+          notifications: [notif(c.id, "ORDER_APPROVED", `আপনার নিবন্ধন অনুমোদিত হয়েছে। রেশন কার্ড নম্বর ${bn(next.rationCardNo!)}`), ...s.notifications.filter((n) => n.link !== `/admin?citizen=${id}`)],
         });
         return next;
       },
@@ -215,7 +216,7 @@ export const useData = create<DataState>()(
           products,
           movements: [...s.movements, ...movements],
           audit: [...s.audit, audit(by, "অর্ডার অনুমোদন", "order", id, { status: "PENDING" }, { status: "AWAITING_PICKUP" })],
-          notifications: [notif(c.id, "ORDER_APPROVED", `অর্ডার ${o.orderNo} অনুমোদিত। সংগ্রহের শেষ সময় ${deadline.toLocaleDateString("bn-BD")}`), ...lowNotes, ...s.notifications.filter((n) => n.link !== `/admin/orders?order=${id}`)],
+          notifications: [notif(c.id, "ORDER_APPROVED", `অর্ডার ${bn(o.orderNo)} অনুমোদিত। ${fmtDateTime(deadline)}-এর মধ্যে পণ্য নিন`), ...lowNotes, ...s.notifications.filter((n) => n.link !== `/admin/orders?order=${id}`)],
         });
         return next;
       },
@@ -244,7 +245,7 @@ export const useData = create<DataState>()(
           products,
           movements: [...s.movements, ...movements],
           audit: [...s.audit, audit(by, "অর্ডার বাতিল", "order", id, { status: o.status }, { status: "CANCELLED", reason })],
-          notifications: [notif(c.id, "ORDER_REJECTED", `অর্ডার ${o.orderNo} বাতিল হয়েছে: ${reason}`), ...s.notifications.filter((n) => n.link !== `/admin/orders?order=${id}`)],
+          notifications: [notif(c.id, "ORDER_REJECTED", `অর্ডার ${bn(o.orderNo)} বাতিল হয়েছে: ${reason}`), ...s.notifications.filter((n) => n.link !== `/admin/orders?order=${id}`)],
         });
         return next;
       },
@@ -271,7 +272,7 @@ export const useData = create<DataState>()(
           orders: s.orders.map((x) => (x.id === orderId ? next : x)),
           movements: [...s.movements, ...movements],
           audit: [...s.audit, { id: uid("au_"), actor: c.id, actorName: c.nameBn, action: "সংগ্রহ নিশ্চিত (নাগরিক)", entity: "order", entityId: orderId, at }],
-          notifications: [notif("STAFF", "COLLECTED", `${c.nameBn} — ${o.orderNo} সংগ্রহ নিশ্চিত করেছেন`, `/admin/orders?order=${orderId}`), notif(c.id, "COLLECTED", `অর্ডার ${o.orderNo} সংগ্রহ সম্পন্ন। ধন্যবাদ!`), ...s.notifications],
+          notifications: [notif("STAFF", "COLLECTED", `${c.nameBn} — ${o.orderNo} সংগ্রহ নিশ্চিত করেছেন`, `/admin/orders?order=${orderId}`), notif(c.id, "COLLECTED", `অর্ডার ${bn(o.orderNo)} সংগ্রহ সম্পন্ন। ধন্যবাদ!`), ...s.notifications],
         });
         return next;
       },
@@ -360,6 +361,7 @@ export const useData = create<DataState>()(
 
       markNotificationRead: (id) => set({ notifications: get().notifications.map((n) => (n.id === id ? { ...n, read: true } : n)) }),
       markAllRead: () => set({ notifications: get().notifications.map((n) => ({ ...n, read: true })) }),
+      setCitizenPin: (citizenId, pinHash) => set({ citizens: get().citizens.map((c) => (c.id === citizenId ? { ...c, pinHash } : c)) }),
       resetSeed: () => set({ ...buildSeed(), seedVersion: SEED_VERSION }),
     }),
     {

@@ -32,3 +32,11 @@ export function pad(n: number, len = 6) {
 export function uid(prefix = "") {
   return prefix + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 }
+
+/** Demo-only salted hash for PINs and codes (the real backend uses argon2). */
+export function demoHash(value: string, salt = "kp-ration") {
+  let h = 5381;
+  const str = `${salt}:${value}`;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+  return `dh_${h.toString(36)}`;
+}

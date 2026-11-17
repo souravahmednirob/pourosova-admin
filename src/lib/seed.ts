@@ -1,5 +1,5 @@
 /* Deterministic, clearly-fictional sample data for Kaliakair Pourashava. */
-import { pad, rng } from "./utils";
+import { pad, rng, demoHash } from "./utils";
 import type {
   AuditEntry,
   Citizen,
@@ -14,7 +14,7 @@ import type {
   Ward,
 } from "./types";
 
-export const SEED_VERSION = 6;
+export const SEED_VERSION = 7;
 
 const FIRST_F = ["রহিমা", "সালেহা", "ফাতেমা", "আয়েশা", "নাসরিন", "শাহনাজ", "রোকেয়া", "হাসিনা", "মর্জিনা", "জোসনা", "পারভীন", "রুমা", "শিউলি", "কুলসুম", "মনোয়ারা", "আনোয়ারা", "সুমি", "রেহানা"];
 const FIRST_M = ["আব্দুল করিম", "রফিকুল", "জাহাঙ্গীর", "সোহেল", "মিজানুর", "আলমগীর", "শফিকুল", "কামাল", "জসিম", "হাফিজ", "নূর", "বাবুল", "সিদ্দিক", "আক্কাস", "মোস্তফা", "ইসমাইল", "সাইফুল", "দেলোয়ার"];
@@ -177,6 +177,8 @@ export function buildSeed(nowMs = Date.now()): SeedData {
   for (const c of approvedSorted) {
     rc += 1;
     c.rationCardNo = `RC-${pad(rc)}`;
+    // most long-standing citizens have already activated the app (demo PIN 1234)
+    if (nowMs - new Date(c.approvedAt!).getTime() > 30 * DAY) c.pinHash = demoHash("1234");
   }
 
   // ── orders: 11 months of history + ~40 recent in all statuses ──

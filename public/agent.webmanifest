@@ -1,6 +1,6 @@
 {
-  "name": "নাগরিক রেশন সেবা – কালিয়াকৈর পৌরসভা",
-  "short_name": "রেশন সেবা",
+  "name": "রেশন সেবা – ফিল্ড এজেন্ট",
+  "short_name": "এজেন্ট",
   "start_url": "/agent",
   "scope": "/",
   "display": "standalone",

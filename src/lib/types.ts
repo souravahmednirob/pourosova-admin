@@ -64,6 +64,8 @@ export interface Citizen {
   registeredByName: string;
   /** application number given to field-agent submissions, e.g. KP-2026-000124 */
   applicationNo?: string;
+  /** citizen app sign-in PIN (stored hashed; set on first activation) */
+  pinHash?: string;
   registeredAt: string;
   approvedBy?: string;
   approvedAt?: string;
