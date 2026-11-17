@@ -1,82 +1,120 @@
 "use client";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Minus, Plus, ShoppingCart } from "lucide-react";
-import { CitizenFrame, CitizenTitle } from "@/components/citizen-app/frame";
+import { Minus, Plus, Search, ShoppingBag, ArrowRight } from "lucide-react";
+import { CitizenFrame } from "@/components/citizen-app/frame";
 import { useAllowance } from "@/components/citizen-app/hooks";
+import { ProductArt } from "@/components/citizen-app/product-art";
+import { Stagger } from "@/components/citizen-app/ui";
 import { useCitizen } from "@/store/citizen";
 import { useData } from "@/store/data";
-import { CATEGORY_LABEL, UNIT_LABEL } from "@/lib/types";
+import { CATEGORY_LABEL, UNIT_LABEL, type ProductCategory } from "@/lib/types";
 import { savingPct, stockState } from "@/lib/orders";
-import { bn, taka, pct } from "@/lib/bn";
+import { bn, taka } from "@/lib/bn";
 import { cn } from "@/lib/utils";
+
+/** "+" button that grows into a − n + capsule once something is added. */
+function AddStepper({ qty, max, onChange, name }: { qty: number; max: number; onChange: (n: number) => void; name: string }) {
+  const open = qty > 0;
+  return (
+    <div className={cn("flex h-10 items-center overflow-hidden rounded-full transition-[width,background-color] duration-500 ease-[var(--ease-spring)]", open ? "w-[104px] bg-[#121a1c] dark:bg-[#ece7de]" : "w-10 bg-transparent")}>
+      {open && (
+        <>
+          <button type="button" onClick={() => onChange(qty - 1)} aria-label={`${name} কমান`} className="grid h-10 w-10 shrink-0 place-items-center text-white dark:text-[#121a1c]"><Minus className="h-4 w-4" strokeWidth={2.4} /></button>
+          <span className="num flex-1 text-center text-[15px] font-bold text-white dark:text-[#121a1c]" aria-live="polite">{bn(qty)}</span>
+        </>
+      )}
+      <button type="button" onClick={() => onChange(qty + 1)} disabled={qty >= max} aria-label={`${name} যোগ করুন`} className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full transition-all disabled:opacity-30", open ? "text-white dark:text-[#121a1c]" : "grad-copper text-white shadow-[0_8px_18px_-8px_var(--glow)]")}>
+        <Plus className="h-[18px] w-[18px]" strokeWidth={2.4} />
+      </button>
+    </div>
+  );
+}
 
 function Products() {
   const allowance = useAllowance();
   const cart = useCitizen((s) => s.cart);
   const setQty = useCitizen((s) => s.setQty);
   const lowPct = useData((s) => s.settings.lowStockPct);
+  const [cat, setCat] = useState<ProductCategory | "ALL">("ALL");
+  const [q, setQ] = useState("");
+
+  const cats = useMemo(() => ["ALL", ...new Set(allowance.map((a) => a.product.category))] as (ProductCategory | "ALL")[], [allowance]);
+  const list = allowance.filter((a) => (cat === "ALL" || a.product.category === cat) && (!q || a.product.name.includes(q)));
   const lines = allowance.filter((a) => cart[a.product.id]);
+  const count = lines.reduce((s, a) => s + cart[a.product.id], 0);
   const total = lines.reduce((s, a) => s + cart[a.product.id] * a.product.municipalPrice, 0);
   const saving = lines.reduce((s, a) => s + cart[a.product.id] * (a.product.marketPrice - a.product.municipalPrice), 0);
 
   return (
-    <>
-      <CitizenTitle title="পণ্য" subtitle="পরিবারের মাসিক সীমার মধ্যে বেছে নিন" />
-      <ul className="flex flex-col gap-3 px-5 pb-28">
-        {allowance.map(({ product: p, left }) => {
+    <div className={cn("flex flex-col transition-[padding] duration-500", lines.length ? "pb-[96px]" : "pb-4")}>
+      <div className="px-5 pt-6">
+        <Stagger i={0}>
+          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-ink">পণ্য বেছে নিন</h1>
+          <p className="mt-1 text-[14px] text-ink-3">বাজারের চেয়ে কম দামে, পরিবারের মাসিক সীমার মধ্যে</p>
+        </Stagger>
+        <Stagger i={1} className="relative mt-4">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-4" strokeWidth={1.8} />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="পণ্য খুঁজুন" className="h-12 w-full rounded-full border border-line bg-surface-solid pl-11 pr-4 text-[15px] text-ink outline-none transition-shadow placeholder:text-ink-4 focus:border-copper focus:shadow-[0_0_0_4px_var(--copper-soft)]" />
+        </Stagger>
+      </div>
+
+      <Stagger i={2} className="no-scrollbar mt-4 flex gap-2 overflow-x-auto px-5 pb-1">
+        {cats.map((c) => (
+          <button key={c} type="button" onClick={() => setCat(c)} className={cn("h-10 shrink-0 rounded-full px-4 text-[14px] font-semibold transition-all duration-300", cat === c ? "bg-[#121a1c] text-white dark:bg-[#ece7de] dark:text-[#121a1c]" : "border border-line bg-surface-solid text-ink-2 hover:bg-sunken")}>
+            {c === "ALL" ? "সব" : CATEGORY_LABEL[c]}
+          </button>
+        ))}
+      </Stagger>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 px-5">
+        {list.map(({ product: p, left }, i) => {
           const st = stockState(p, lowPct);
-          const q = cart[p.id] ?? 0;
+          const qty = cart[p.id] ?? 0;
           const max = Math.min(left, p.stock);
-          const disabled = max === 0;
+          const blocked = max === 0 && qty === 0;
           return (
-            <li key={p.id} className={cn("glass rounded-[22px] p-4 transition-opacity", disabled && q === 0 && "opacity-60")}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-[17px] font-bold text-ink">{p.name}</div>
-                  <div className="text-[12.5px] text-ink-3">{CATEGORY_LABEL[p.category]} · প্রতি {UNIT_LABEL[p.unit]}</div>
+            <Stagger key={p.id} i={i + 3}>
+              <article className={cn("group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-line bg-surface-solid transition-[transform,box-shadow] duration-300", qty > 0 && "ring-2 ring-copper/60", !blocked && "hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]")}>
+                <div className="relative">
+                  <ProductArt product={p} size={76} className={cn("h-[118px] transition-transform duration-500", blocked && "grayscale")} />
+                  {st !== "OK" && <span className={cn("absolute right-2.5 top-2.5 rounded-full px-2 py-0.5 text-[11px] font-bold backdrop-blur", st === "OUT" ? "bg-brick text-white" : "bg-ochre-soft text-ochre")}>{st === "OUT" ? "এখন নেই" : "অল্প আছে"}</span>}
                 </div>
-                <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-[12px] font-semibold", st === "OUT" ? "bg-brick-soft text-brick" : st === "LOW" ? "bg-ochre-soft text-ochre" : "bg-sage-soft text-sage")}>
-                  {st === "OUT" ? "এখন নেই" : st === "LOW" ? "অল্প আছে" : "পাওয়া যাচ্ছে"}
-                </span>
-              </div>
-              {/* price with the saving pill on the same line */}
-              <div className="mt-3 flex flex-wrap items-center gap-2 whitespace-nowrap">
-                <span className="num text-[22px] font-bold text-ink">{taka(p.municipalPrice)}</span>
-                <span className="num text-[14px] text-ink-3 line-through">{taka(p.marketPrice)}</span>
-                <span className="rounded-full bg-sage-soft px-2.5 py-0.5 text-[12.5px] font-bold text-sage">সাশ্রয় {pct(savingPct(p))}</span>
-              </div>
-              <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3">
-                <span className="text-[13px] text-ink-3">{left === 0 ? "এ মাসের সীমা শেষ" : `এ মাসে আর ${bn(left)} ${UNIT_LABEL[p.unit]} নিতে পারবেন`}</span>
-                <div className="flex items-center gap-2.5">
-                  <button type="button" onClick={() => setQty(p.id, q - 1)} disabled={q === 0} aria-label={`${p.name} কমান`} className="grid h-11 w-11 place-items-center rounded-[12px] border border-line-strong bg-surface-solid text-ink transition-opacity disabled:opacity-30">
-                    <Minus className="h-5 w-5" />
-                  </button>
-                  <span className="num min-w-7 text-center text-[19px] font-bold text-ink" aria-live="polite">{bn(q)}</span>
-                  <button type="button" onClick={() => setQty(p.id, q + 1)} disabled={q >= max} aria-label={`${p.name} বাড়ান`} className="grad-copper grid h-11 w-11 place-items-center rounded-[12px] text-white transition-opacity disabled:opacity-30">
-                    <Plus className="h-5 w-5" />
-                  </button>
+                <div className="flex flex-1 flex-col p-3.5">
+                  <div className="text-[15.5px] font-bold leading-tight text-ink">{p.name}</div>
+                  <div className="text-[12px] text-ink-3">প্রতি {UNIT_LABEL[p.unit]} · বাজারে <s className="num">{taka(p.marketPrice)}</s></div>
+                  {/* price with the saving pill on the same line */}
+                  <div className="mt-2.5 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="num text-[21px] font-bold leading-none tracking-tight text-ink">{taka(p.municipalPrice)}</span>
+                    <span className="num rounded-full bg-sage-soft px-1.5 py-0.5 text-[11px] font-bold text-sage">সাশ্রয় {bn(savingPct(p))}%</span>
+                  </div>
+                  <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+                    <div className={cn("min-w-0 whitespace-nowrap text-[11.5px] leading-tight", left === 0 ? "text-brick" : "text-ink-3")}>{left === 0 ? "সীমা শেষ" : <>আর <b className="num text-ink-2">{bn(left)}</b>{qty > 0 ? "" : ` ${UNIT_LABEL[p.unit]}`}</>}</div>
+                    {!blocked && <AddStepper qty={qty} max={max} onChange={(n) => setQty(p.id, n)} name={p.name} />}
+                  </div>
                 </div>
-              </div>
-            </li>
+              </article>
+            </Stagger>
           );
         })}
-      </ul>
+      </div>
+      {list.length === 0 && <div className="py-16 text-center text-[14px] text-ink-3">কিছু পাওয়া যায়নি</div>}
 
-      {lines.length > 0 && (
-        <div className="fixed bottom-[92px] left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 px-4 sm:absolute">
-          <Link href="/citizen/cart" className="grad-copper flex items-center justify-between gap-3 rounded-[18px] px-5 py-3.5 text-white shadow-[0_16px_32px_-12px_var(--glow)] animate-[page-in_260ms_var(--ease-out)]">
-            <span className="flex items-center gap-2.5">
-              <ShoppingCart className="h-5 w-5" strokeWidth={1.8} />
-              <span>
-                <span className="block text-[15px] font-bold">{bn(lines.length)}টি পণ্য · {taka(total)}</span>
-                <span className="block text-[12px] opacity-90">সাশ্রয় {taka(saving)}</span>
-              </span>
-            </span>
-            <span className="text-[15px] font-bold">দেখুন →</span>
-          </Link>
-        </div>
-      )}
-    </>
+      {/* floating basket */}
+      <div className={cn("fixed bottom-[92px] left-1/2 z-20 w-[calc(100%-32px)] max-w-[398px] -translate-x-1/2 transition-[opacity,transform] duration-500 ease-[var(--ease-spring)] sm:absolute", lines.length ? "opacity-100" : "pointer-events-none translate-y-6 opacity-0")}>
+        <Link href="/citizen/cart" className="grad-copper flex items-center gap-3 rounded-[22px] p-2 pl-3 text-white shadow-[0_18px_36px_-14px_var(--glow)]">
+          <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-white/15">
+            <ShoppingBag className="h-5 w-5" strokeWidth={1.8} />
+            <span className="num absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-white px-1 text-[11px] font-bold text-copper-deep">{bn(count)}</span>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="num block text-[16px] font-bold leading-tight">{taka(total)}</span>
+            <span className="num block text-[12px] text-white/85">সাশ্রয় {taka(saving)}</span>
+          </span>
+          <span className="flex h-11 items-center gap-1.5 rounded-2xl bg-white px-4 text-[14px] font-bold text-copper-deep">পরবর্তী <ArrowRight className="h-4 w-4" strokeWidth={2.4} /></span>
+        </Link>
+      </div>
+    </div>
   );
 }
 

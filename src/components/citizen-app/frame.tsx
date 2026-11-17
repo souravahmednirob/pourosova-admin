@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { href: "/citizen", label: "হোম", Icon: Home },
   { href: "/citizen/products", label: "পণ্য", Icon: ShoppingBasket },
-  { href: "/citizen/orders", label: "আমার অর্ডার", Icon: ReceiptText },
+  { href: "/citizen/orders", label: "অর্ডার", Icon: ReceiptText },
 ];
 
 /** Phone-width shell for the citizen app, with bottom tab bar. */
@@ -56,23 +56,25 @@ export function CitizenFrame({ children, requireAuth = true, tabs = true }: { ch
               <WifiOff className="h-4 w-4" strokeWidth={1.8} /> ইন্টারনেট নেই — কিছু তথ্য পুরোনো হতে পারে
             </div>
           )}
-          <div className={cn("flex flex-1 flex-col", tabs && ready && "pb-[84px]")}>
+          <div className={cn("flex flex-1 flex-col", tabs && ready && "pb-[104px]")}>
             {ready ? children : <div className="grid flex-1 place-items-center"><div className="h-9 w-9 animate-spin rounded-full border-2 border-line-strong border-t-copper" /></div>}
           </div>
           {tabs && ready && (
-            <nav aria-label="প্রধান মেনু" className="glass-strong fixed bottom-0 left-1/2 z-30 flex w-full max-w-[430px] -translate-x-1/2 items-stretch justify-around rounded-none border-x-0 border-b-0 px-2 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:absolute sm:rounded-b-[32px]">
-              {TABS.map(({ href, label, Icon }) => {
-                const on = isActive(href);
-                return (
-                  <Link key={href} href={href} aria-current={on ? "page" : undefined} className={cn("relative flex min-w-[88px] flex-col items-center gap-1 rounded-2xl px-3 py-1.5 text-[12.5px] font-semibold transition-colors", on ? "text-copper-deep dark:text-copper" : "text-ink-3")}>
-                    <span className={cn("grid h-9 w-14 place-items-center rounded-full transition-all duration-300 ease-[var(--ease-spring)]", on && "bg-copper-soft")}>
-                      <Icon className="h-[22px] w-[22px]" strokeWidth={1.8} />
-                    </span>
-                    {label}
-                    {href === "/citizen/products" && cartCount > 0 && <span className="num absolute right-4 top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-copper px-1 text-[11px] font-bold text-white">{bn(cartCount)}</span>}
-                  </Link>
-                );
-              })}
+            <nav aria-label="প্রধান মেনু" className="fixed bottom-4 left-1/2 z-30 w-[calc(100%-32px)] max-w-[398px] -translate-x-1/2 sm:absolute">
+              <div className="relative grid grid-cols-3 rounded-full border border-[var(--line)] bg-[var(--surface-strong)] p-1.5 shadow-[0_18px_40px_-14px_rgba(18,26,28,.35)] backdrop-blur-xl">
+                {/* sliding active indicator */}
+                <span aria-hidden className="absolute bottom-1.5 top-1.5 rounded-full bg-[#121a1c] transition-transform duration-500 ease-[var(--ease-spring)] dark:bg-[#ece7de]" style={{ left: 6, width: "calc((100% - 12px) / 3)", transform: `translateX(${Math.max(0, TABS.findIndex((t) => isActive(t.href))) * 100}%)` }} />
+                {TABS.map(({ href, label, Icon }) => {
+                  const on = isActive(href);
+                  return (
+                    <Link key={href} href={href} aria-current={on ? "page" : undefined} className={cn("relative z-10 flex h-12 items-center justify-center gap-2 rounded-full text-[13.5px] font-semibold transition-colors duration-300", on ? "text-white dark:text-[#121a1c]" : "text-ink-3 hover:text-ink")}>
+                      <Icon className="h-[20px] w-[20px] shrink-0" strokeWidth={on ? 2.1 : 1.8} />
+                      <span className={cn("overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-500 ease-[var(--ease-out)]", on ? "max-w-[90px] opacity-100" : "max-w-0 opacity-0")}>{label}</span>
+                      {href === "/citizen/products" && cartCount > 0 && <span className="num absolute right-[22%] top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-copper px-1 text-[10.5px] font-bold text-white ring-2 ring-[var(--surface-solid)]">{bn(cartCount)}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
             </nav>
           )}
         </div>
