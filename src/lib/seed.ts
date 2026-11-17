@@ -14,7 +14,7 @@ import type {
   Ward,
 } from "./types";
 
-export const SEED_VERSION = 5;
+export const SEED_VERSION = 6;
 
 const FIRST_F = ["রহিমা", "সালেহা", "ফাতেমা", "আয়েশা", "নাসরিন", "শাহনাজ", "রোকেয়া", "হাসিনা", "মর্জিনা", "জোসনা", "পারভীন", "রুমা", "শিউলি", "কুলসুম", "মনোয়ারা", "আনোয়ারা", "সুমি", "রেহানা"];
 const FIRST_M = ["আব্দুল করিম", "রফিকুল", "জাহাঙ্গীর", "সোহেল", "মিজানুর", "আলমগীর", "শফিকুল", "কামাল", "জসিম", "হাফিজ", "নূর", "বাবুল", "সিদ্দিক", "আক্কাস", "মোস্তফা", "ইসমাইল", "সাইফুল", "দেলোয়ার"];
@@ -84,7 +84,7 @@ export interface SeedData {
   audit: AuditEntry[];
   notifications: Notification[];
   settings: Settings;
-  counters: { rc: number; order: number };
+  counters: { rc: number; order: number; app: number };
 }
 
 export function buildSeed(nowMs = Date.now()): SeedData {
@@ -161,6 +161,14 @@ export function buildSeed(nowMs = Date.now()): SeedData {
       }
     }
     citizens.push(c);
+  }
+
+  // application numbers for agent submissions, by submission time
+  let appNo = 0;
+  for (const c of [...citizens].sort((a, b) => a.registeredAt.localeCompare(b.registeredAt))) {
+    if (c.registeredBy === "OFFICE") continue;
+    appNo += 1;
+    c.applicationNo = `KP-${new Date(c.registeredAt).getFullYear()}-${pad(appNo)}`;
   }
 
   // ration card numbers: sequential by approval time, never reused
@@ -301,6 +309,6 @@ export function buildSeed(nowMs = Date.now()): SeedData {
     audit,
     notifications,
     settings: DEFAULT_SETTINGS,
-    counters: { rc, order: orders.length },
+    counters: { rc, order: orders.length, app: appNo },
   };
 }

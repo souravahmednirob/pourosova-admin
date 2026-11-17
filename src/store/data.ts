@@ -112,6 +112,10 @@ export const useData = create<DataState>()(
           registeredAt: at,
         };
         let counters = s.counters;
+        if (!autoApprove) {
+          counters = { ...counters, app: (counters.app ?? 0) + 1 };
+          c.applicationNo = `KP-${new Date().getFullYear()}-${pad(counters.app)}`;
+        }
         if (autoApprove) {
           counters = { ...counters, rc: counters.rc + 1 };
           c.status = "APPROVED";

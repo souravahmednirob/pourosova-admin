@@ -599,3 +599,37 @@ h4 {
     display: none !important;
   }
 }
+
+/* ───────────────────────────── Agent app step slides ───────────────────────────── */
+@keyframes slide-fwd {
+  from {
+    opacity: 0;
+    transform: translateX(70px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes slide-back {
+  from {
+    opacity: 0;
+    transform: translateX(-70px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.slide-fwd {
+  animation: slide-fwd 0.9s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+.slide-back {
+  animation: slide-back 0.9s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide-fwd,
+  .slide-back {
+    animation: none;
+  }
+}

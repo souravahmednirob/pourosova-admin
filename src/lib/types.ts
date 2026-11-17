@@ -62,6 +62,8 @@ export interface Citizen {
   /** user id of agent/admin, or "OFFICE" when registered at the municipal office */
   registeredBy: string;
   registeredByName: string;
+  /** application number given to field-agent submissions, e.g. KP-2026-000124 */
+  applicationNo?: string;
   registeredAt: string;
   approvedBy?: string;
   approvedAt?: string;

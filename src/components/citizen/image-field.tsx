@@ -14,7 +14,7 @@ export async function fileToDataUrl(file: File, maxW = 720, quality = 0.82): Pro
   return canvas.toDataURL("image/jpeg", quality);
 }
 
-export function ImageField({ label, hint, value, onChange, aspect = "card", capture }: { label: string; hint?: string; value?: string; onChange: (v: string | undefined) => void; aspect?: "card" | "portrait"; capture?: "user" | "environment" }) {
+export function ImageField({ label, hint, value, onChange, aspect = "card", capture, compact }: { label: string; hint?: string; value?: string; onChange: (v: string | undefined) => void; aspect?: "card" | "portrait"; capture?: "user" | "environment"; compact?: boolean }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -32,7 +32,7 @@ export function ImageField({ label, hint, value, onChange, aspect = "card", capt
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[13px] font-semibold text-ink-2">{label}</span>
+      {label && <span className="text-[13px] font-semibold text-ink-2">{label}</span>}
       <div
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
         onDragLeave={() => setDrag(false)}
@@ -42,7 +42,7 @@ export function ImageField({ label, hint, value, onChange, aspect = "card", capt
         {value ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={value} alt={label} className="h-full w-full object-cover" />
+            <img src={value} alt={label || "ছবি"} className="h-full w-full object-cover" />
             <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1.5 bg-gradient-to-t from-black/55 to-transparent p-2">
               <button type="button" onClick={() => fileRef.current?.click()} className="grid h-8 w-8 place-items-center rounded-lg bg-white/90 text-ink hover:bg-white" aria-label="আবার দিন"><RefreshCw className="h-4 w-4" strokeWidth={1.8} /></button>
               <button type="button" onClick={() => onChange(undefined)} className="grid h-8 w-8 place-items-center rounded-lg bg-white/90 text-brick hover:bg-white" aria-label="সরান"><X className="h-4 w-4" strokeWidth={1.8} /></button>
@@ -54,15 +54,15 @@ export function ImageField({ label, hint, value, onChange, aspect = "card", capt
               <div className="h-7 w-7 animate-spin rounded-full border-2 border-line-strong border-t-copper" />
             ) : (
               <>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => camRef.current?.click()} className="flex h-10 items-center gap-1.5 rounded-[12px] border border-line-strong bg-surface-solid px-3 text-[13px] font-semibold text-ink hover:border-copper">
-                    <Camera className="h-4 w-4" strokeWidth={1.8} /> ক্যামেরা
+                <div className={cn("flex gap-2", compact && "flex-col")}>
+                  <button type="button" onClick={() => camRef.current?.click()} aria-label="ক্যামেরা দিয়ে তুলুন" className={cn("flex h-10 items-center justify-center gap-1.5 rounded-[12px] border border-line-strong bg-surface-solid text-[13px] font-semibold text-ink hover:border-copper", compact ? "w-11 px-0" : "px-3")}>
+                    <Camera className="h-4 w-4" strokeWidth={1.8} /> {!compact && "ক্যামেরা"}
                   </button>
-                  <button type="button" onClick={() => fileRef.current?.click()} className="flex h-10 items-center gap-1.5 rounded-[12px] border border-line-strong bg-surface-solid px-3 text-[13px] font-semibold text-ink hover:border-copper">
-                    <ImagePlus className="h-4 w-4" strokeWidth={1.8} /> ফাইল
+                  <button type="button" onClick={() => fileRef.current?.click()} aria-label="ফাইল থেকে দিন" className={cn("flex h-10 items-center justify-center gap-1.5 rounded-[12px] border border-line-strong bg-surface-solid text-[13px] font-semibold text-ink hover:border-copper", compact ? "w-11 px-0" : "px-3")}>
+                    <ImagePlus className="h-4 w-4" strokeWidth={1.8} /> {!compact && "ফাইল"}
                   </button>
                 </div>
-                {hint && <span className="text-[12px] text-ink-3">{hint}</span>}
+                {hint && !compact && <span className="text-[12px] text-ink-3">{hint}</span>}
               </>
             )}
           </div>

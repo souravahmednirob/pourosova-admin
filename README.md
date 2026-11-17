@@ -6,8 +6,8 @@ Phase-by-phase build; this repository currently ships a browser-side mock data l
 ## Run
 
 ```bash
-pnpm install
-pnpm dev        # http://localhost:3000  → /admin
+yarn install
+yarn dev        # http://localhost:3000  → /admin
 ```
 
 Demo accounts (password `admin123`): `super@kaliakair.gov.bd` (TOTP demo code 123456), `admin@kaliakair.gov.bd`, `officer@kaliakair.gov.bd`, `viewer@kaliakair.gov.bd`.
@@ -15,7 +15,8 @@ Demo accounts (password `admin123`): `super@kaliakair.gov.bd` (TOTP demo code 12
 ## Routes
 
 - `/admin` – staff portal (login at `/admin/login`)
-- `/citizen` – citizen web app (later phase)
+- `/agent` – field-agent web app (login `agent1@kaliakair.gov.bd` / `agent123`): 4-step registration, own submissions only, works offline (installable PWA; the service worker is active in `yarn build && yarn start`)
+- `/citizen` – citizen web app (next phase)
 
 ## Design
 
