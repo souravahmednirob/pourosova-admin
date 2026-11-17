@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { buildSeed, SEED_VERSION, type SeedData } from "@/lib/seed";
 import { pad, uid } from "@/lib/utils";
+import { bn } from "@/lib/bn";
 import type { AuditEntry, Citizen, Notification, Order, OrderItem, Product, StockMovement, User } from "@/lib/types";
 
 export class RuleError extends Error {
@@ -171,7 +172,7 @@ export const useData = create<DataState>()(
           if (!p || !p.active) throw new RuleError("পণ্যটি এখন পাওয়া যাচ্ছে না");
           if (it.quantity < 1) continue;
           const used = s.monthlyUsage(citizenId, p.id);
-          if (used + it.quantity > p.perFamilyLimit) throw new RuleError(`${p.name}: এই মাসে আর ${Math.max(0, p.perFamilyLimit - used)} ${p.unit === "L" ? "লিটার" : "কেজি"} নেওয়া যাবে`);
+          if (used + it.quantity > p.perFamilyLimit) throw new RuleError(`${p.name}: এই মাসে আর ${bn(Math.max(0, p.perFamilyLimit - used))} ${p.unit === "L" ? "লিটার" : "কেজি"} নেওয়া যাবে`);
           if (p.stock < it.quantity) throw new RuleError(`${p.name}: পর্যাপ্ত মজুত নেই`);
           orderItems.push({ productId: p.id, quantity: it.quantity, unitPriceSnapshot: p.municipalPrice, marketPriceSnapshot: p.marketPrice });
         }
@@ -195,7 +196,7 @@ export const useData = create<DataState>()(
         const products = s.products.map((p) => ({ ...p }));
         for (const it of o.items) {
           const p = products.find((x) => x.id === it.productId)!;
-          if (p.stock < it.quantity) throw new RuleError(`${p.name}: মজুত অপর্যাপ্ত (আছে ${p.stock}, দরকার ${it.quantity})`);
+          if (p.stock < it.quantity) throw new RuleError(`${p.name}: মজুত অপর্যাপ্ত (আছে ${bn(p.stock)}, দরকার ${bn(it.quantity)})`);
           p.stock -= it.quantity;
         }
         const code = pad(Math.floor(Math.random() * 1_000_000));
@@ -256,7 +257,7 @@ export const useData = create<DataState>()(
           const tries = (o.wrongTries ?? 0) + 1;
           const locked = tries >= 5;
           set({ orders: s.orders.map((x) => (x.id === orderId ? { ...x, wrongTries: locked ? 0 : tries, lockedUntil: locked ? new Date(Date.now() + 10 * 60_000).toISOString() : x.lockedUntil } : x)) });
-          throw new RuleError(locked ? "৫ বার ভুল কোড। ১০ মিনিট পর আবার চেষ্টা করুন" : `কোড মেলেনি (${5 - tries} বার চেষ্টা বাকি)`);
+          throw new RuleError(locked ? "৫ বার ভুল কোড। ১০ মিনিট পর আবার চেষ্টা করুন" : `কোড মেলেনি (${bn(5 - tries)} বার চেষ্টা বাকি)`);
         }
         const at = nowIso();
         const movements: StockMovement[] = o.items.map((it) => ({ id: uid("m_"), productId: it.productId, type: "SALE", quantity: it.quantity, orderId: o.id, actor: o.citizenId, at }));

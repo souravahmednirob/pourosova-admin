@@ -51,6 +51,8 @@ export interface DataGridProps<T> {
   emptyTitle?: string;
   storageKey?: string;
   minHeight?: number;
+  /** turn off the row-group bar / floating filters / column tab for simpler tables */
+  features?: { groupBar?: boolean; filters?: boolean; columnPanel?: boolean; menu?: boolean };
 }
 
 type DisplayRow<T> = { type: "row"; row: T; depth: number } | { type: "group"; key: string; label: string; count: number; depth: number; path: string; colLabel: string };
@@ -63,7 +65,8 @@ function cmp(a: unknown, b: unknown) {
   return String(a).localeCompare(String(b), "bn");
 }
 
-export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primaryAction, pageSizeOptions = [8, 15, 25, 50, 100], defaultPageSize = 8, defaultSort, exportFileName = "export", highlightKey, quickSearch, emptyTitle = "কোনো তথ্য নেই", storageKey, minHeight = 420 }: DataGridProps<T>) {
+export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primaryAction, pageSizeOptions = [8, 15, 25, 50, 100], defaultPageSize = 8, defaultSort, exportFileName = "export", highlightKey, quickSearch, emptyTitle = "কোনো তথ্য নেই", storageKey, minHeight = 420, features }: DataGridProps<T>) {
+  const feat = { groupBar: true, filters: true, columnPanel: true, menu: true, ...features };
   const [sort, setSort] = useState<SortState | null>(defaultSort ?? null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [hidden, setHidden] = useState<Set<string>>(() => new Set(columns.filter((c) => c.hiddenByDefault).map((c) => c.key)));
@@ -200,6 +203,7 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
     <div className="glass card relative flex flex-col overflow-hidden" style={{ minHeight }}>
       {/* ── Top bar: group drop zone + actions ── */}
       <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
+        {feat.groupBar ? (
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -230,7 +234,10 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
             </span>
           ))}
         </div>
-        {toolbar}
+        ) : (
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{toolbar}</div>
+        )}
+        {feat.groupBar && toolbar}
         {primaryAction}
         <div className="flex items-center gap-1">
           {quickSearch && (
@@ -248,7 +255,7 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
               )}
             </div>
           )}
-          <DropdownMenu.Root>
+          {feat.menu && <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
               <button type="button" className="grid h-10 w-10 place-items-center rounded-[12px] border border-line-strong bg-surface-solid text-ink-2 hover:text-ink" aria-label="গ্রিড মেনু">
                 <MoreVertical className="h-4.5 w-4.5" strokeWidth={1.8} />
@@ -262,7 +269,7 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
                 <DropdownMenu.Item onSelect={reset} className={menuItem}><RotateCcw className="h-4 w-4" strokeWidth={1.8} /> ফিল্টার ও সাজানো রিসেট</DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
-          </DropdownMenu.Root>
+          </DropdownMenu.Root>}
         </div>
       </div>
 
@@ -278,7 +285,7 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
                   return (
                     <th
                       key={c.key}
-                      draggable={c.groupable !== false}
+                      draggable={feat.groupBar && c.groupable !== false}
                       onDragStart={(e) => {
                         dragKey.current = c.key;
                         e.dataTransfer.setData("text/col", c.key);
@@ -289,7 +296,7 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
                       className={cn("group/head border-b border-r border-line bg-[var(--surface-solid)] px-3 py-0 text-left last:border-r-0", c.align === "right" && "text-right")}
                     >
                       <div className="flex h-11 items-center gap-1">
-                        {c.groupable !== false && <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-ink-4 opacity-0 transition-opacity group-hover/head:opacity-100" strokeWidth={1.8} />}
+                        {feat.groupBar && c.groupable !== false && <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-ink-4 opacity-0 transition-opacity group-hover/head:opacity-100" strokeWidth={1.8} />}
                         <button type="button" onClick={() => c.sortable !== false && toggleSort(c.key)} className={cn("label-caps flex min-w-0 flex-1 items-center gap-1.5 truncate text-left", c.align === "right" && "justify-end")}>
                           <span className="truncate">{c.label}</span>
                           {c.sortable !== false && (sorted ? sort!.dir === "asc" ? <ArrowUp className="h-3.5 w-3.5 shrink-0" /> : <ArrowDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-hover/head:opacity-60" />)}
@@ -310,7 +317,7 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
                                   <DropdownMenu.Separator className="divider my-1" />
                                 </>
                               )}
-                              {c.groupable !== false && <DropdownMenu.Item onSelect={() => !groupBy.includes(c.key) && setGroupBy((g) => [...g, c.key])} className={menuItem}><Layers className="h-4 w-4" /> এই কলামে গ্রুপ</DropdownMenu.Item>}
+                              {feat.groupBar && c.groupable !== false && <DropdownMenu.Item onSelect={() => !groupBy.includes(c.key) && setGroupBy((g) => [...g, c.key])} className={menuItem}><Layers className="h-4 w-4" /> এই কলামে গ্রুপ</DropdownMenu.Item>}
                               <DropdownMenu.Item onSelect={() => setHidden((h) => new Set([...h, c.key]))} className={menuItem}><EyeOff className="h-4 w-4" /> কলাম লুকান</DropdownMenu.Item>
                               <DropdownMenu.Item onSelect={() => setColPanel(true)} className={menuItem}><Columns3 className="h-4 w-4" /> সব কলাম…</DropdownMenu.Item>
                             </DropdownMenu.Content>
@@ -322,7 +329,7 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
                 })}
               </tr>
               {/* floating filter row */}
-              <tr>
+              {feat.filters && <tr>
                 {groupBy.length > 0 && <td className="border-b border-line bg-[var(--surface-solid)]" />}
                 {visibleCols.map((c) => (
                   <td key={c.key} className="border-b border-r border-line bg-[var(--surface-solid)] px-2 py-1.5 last:border-r-0">
@@ -347,7 +354,7 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
                     ) : null}
                   </td>
                 ))}
-              </tr>
+              </tr>}
             </thead>
             <tbody>
               {pageRows.length === 0 && (
@@ -391,7 +398,7 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
         </div>
 
         {/* column side tab */}
-        <div className="relative z-[3] flex shrink-0 border-l border-line bg-[var(--surface-solid)]">
+        {feat.columnPanel && <div className="relative z-[3] flex shrink-0 border-l border-line bg-[var(--surface-solid)]">
           <button type="button" onClick={() => setColPanel((v) => !v)} className={cn("flex w-8 items-start justify-center pt-3 text-[12px] font-semibold tracking-wider text-ink-3 transition-colors hover:text-ink [writing-mode:vertical-rl]", colPanel && "text-copper-deep dark:text-copper")} aria-expanded={colPanel} aria-label="কলাম প্যানেল">
             <span className="flex items-center gap-1.5"><Columns3 className="h-3.5 w-3.5 rotate-90" strokeWidth={1.8} /> কলাম</span>
           </button>
@@ -417,7 +424,7 @@ export function DataGrid<T>({ rows, columns, rowKey, onRowClick, toolbar, primar
               </ul>
             </div>
           )}
-        </div>
+        </div>}
       </div>
 
       {/* ── Footer ── */}
