@@ -1,14 +1,14 @@
 "use client";
 import * as echarts from "echarts/core";
 import { LineChart, BarChart, PieChart } from "echarts/charts";
-import { GridComponent, TooltipComponent, LegendComponent, DatasetComponent, AriaComponent } from "echarts/components";
+import { GridComponent, TooltipComponent, LegendComponent, DatasetComponent, AriaComponent, TitleComponent } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
 import type { EChartsCoreOption } from "echarts/core";
 import { useEffect, useRef } from "react";
 import { useUI, useReducedMotion } from "@/store/ui";
 import { cn } from "@/lib/utils";
 
-echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, DatasetComponent, AriaComponent, CanvasRenderer]);
+echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, DatasetComponent, AriaComponent, TitleComponent, CanvasRenderer]);
 
 export interface ChartTheme {
   ink: string;

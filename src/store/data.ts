@@ -382,3 +382,8 @@ export const useData = create<DataState>()(
 );
 
 export type { User };
+
+// dev-only handle for automated checks in the browser
+if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+  (window as unknown as { __kpData: typeof useData }).__kpData = useData;
+}

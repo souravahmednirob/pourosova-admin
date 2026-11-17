@@ -14,7 +14,7 @@ import type {
   Ward,
 } from "./types";
 
-export const SEED_VERSION = 4;
+export const SEED_VERSION = 5;
 
 const FIRST_F = ["রহিমা", "সালেহা", "ফাতেমা", "আয়েশা", "নাসরিন", "শাহনাজ", "রোকেয়া", "হাসিনা", "মর্জিনা", "জোসনা", "পারভীন", "রুমা", "শিউলি", "কুলসুম", "মনোয়ারা", "আনোয়ারা", "সুমি", "রেহানা"];
 const FIRST_M = ["আব্দুল করিম", "রফিকুল", "জাহাঙ্গীর", "সোহেল", "মিজানুর", "আলমগীর", "শফিকুল", "কামাল", "জসিম", "হাফিজ", "নূর", "বাবুল", "সিদ্দিক", "আক্কাস", "মোস্তফা", "ইসমাইল", "সাইফুল", "দেলোয়ার"];
@@ -120,7 +120,7 @@ export function buildSeed(nowMs = Date.now()): SeedData {
     usedMobile.add(mobile);
 
     // registration spread over last 12 months, denser recently
-    const ageDays = Math.floor(Math.pow(r(), 1.6) * 360);
+    const ageDays = Math.floor(Math.pow(r(), 1.2) * 360);
     const registeredAt = new Date(nowMs - ageDays * DAY - int(0, 8) * 3_600_000 - int(0, 59) * 60_000);
     registeredAt.setHours(int(9, 17), int(0, 59), 0, 0);
     const byOffice = r() < 0.3;
