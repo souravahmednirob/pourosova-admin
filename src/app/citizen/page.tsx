@@ -2,10 +2,11 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import * as Popover from "@radix-ui/react-popover";
-import { ArrowUpRight, Bell, ChevronRight, LogOut, Sparkles, TrendingDown, PackageCheck, Hourglass, QrCode } from "lucide-react";
+import { Bell, ChevronRight, LogOut, Sparkles, Hourglass, QrCode } from "lucide-react";
 import { CitizenFrame } from "@/components/citizen-app/frame";
 import { useMe, useAllowance } from "@/components/citizen-app/hooks";
 import { WalletCard } from "@/components/citizen-app/wallet-card";
+import { SavingsCard } from "@/components/citizen-app/savings-card";
 import { ProductArt } from "@/components/citizen-app/product-art";
 import { Ring, Stagger, greeting, useCountdown } from "@/components/citizen-app/ui";
 import { useCitizen } from "@/store/citizen";
@@ -60,16 +61,6 @@ function Home() {
   const usedRatio = totalLimitValue ? usedValue / totalLimitValue : 0;
   const canBuy = allowance.filter((a) => a.left > 0 && a.product.stock > 0).length;
 
-  // savings for the last 6 months for the sparkline
-  const spark = useMemo(() => {
-    const now = new Date();
-    return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-      return collected.filter((o) => { const c = new Date(o.collectedAt!); return c.getFullYear() === d.getFullYear() && c.getMonth() === d.getMonth(); }).reduce((s, o) => s + orderTotals(o).saving, 0);
-    });
-  }, [collected]);
-  const max = Math.max(1, ...spark);
-
   return (
     <div className="flex flex-col gap-5 px-5 pb-4 pt-6">
       {/* top bar */}
@@ -115,68 +106,36 @@ function Home() {
         </Stagger>
       )}
 
-      {/* bento */}
-      <Stagger i={3} className="grid grid-cols-2 gap-3">
-        <div className="col-span-1 row-span-2 flex flex-col justify-between rounded-[24px] bg-sage-soft p-4">
-          <div className="flex items-center justify-between">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-sage text-white dark:text-[#0a1114]"><TrendingDown className="h-[18px] w-[18px]" strokeWidth={2} /></span>
-            <Link href="/citizen/orders" aria-label="অর্ডার ইতিহাস" className="grid h-8 w-8 place-items-center rounded-full text-sage hover:bg-sage/10"><ArrowUpRight className="h-[18px] w-[18px]" /></Link>
-          </div>
-          <div className="mt-6">
-            <div className="text-[12.5px] font-medium text-ink-2">বাজারের চেয়ে কম দিয়েছেন</div>
-            <div className="num mt-0.5 text-[26px] font-bold leading-tight tracking-tight text-sage">{taka(saved)}</div>
-          </div>
-          <div className="mt-3 flex h-12 items-end gap-1.5" aria-label="শেষ ৬ মাসের সাশ্রয়">
-            {spark.map((v, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                <div className={cn("w-full rounded-full transition-[height] duration-1000 ease-[var(--ease-out)]", i === 5 ? "bg-sage" : "bg-sage/30")} style={{ height: `${Math.max(8, (v / max) * 40)}px` }} />
+      {/* this month's allowance — one card, one message */}
+      <Stagger i={3}>
+        <section className="relative overflow-hidden rounded-[28px] border border-line bg-surface-solid">
+          <div className="flex items-center gap-4 p-5 pb-4">
+            <Ring value={1 - usedRatio} size={64} stroke={6} color="var(--copper)">
+              <span className="num text-[14px] font-bold text-ink">{bn(Math.round((1 - usedRatio) * 100))}%</span>
+            </Ring>
+            <div className="min-w-0">
+              <div className="text-[13px] text-ink-3">{monthName(new Date().getMonth())} মাসের বরাদ্দ</div>
+              <div className="text-[18px] font-bold leading-snug tracking-tight text-ink">
+                {usedRatio >= 1 ? "এ মাসের সব নেওয়া হয়েছে" : <>আরও <span className="num text-copper-deep dark:text-copper">{taka(totalLimitValue - usedValue)}</span> মূল্যের পণ্য নিতে পারবেন</>}
               </div>
+            </div>
+          </div>
+          <div className="no-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5 pb-5">
+            {allowance.map(({ product: p, left }) => (
+              <Link key={p.id} href={`/citizen/products?p=${p.id}`} className={cn("flex w-[164px] shrink-0 snap-start items-center gap-2.5 rounded-[18px] bg-sunken p-2 pr-3 transition-transform active:scale-[0.97]", left === 0 && "opacity-50")}>
+                <ProductArt product={p} size={32} className="h-11 w-11 shrink-0 rounded-[14px]" />
+                <div className="min-w-0">
+                  <div className="truncate text-[13px] font-semibold text-ink">{p.name}</div>
+                  <div className="num whitespace-nowrap text-[12px] text-ink-3">{left === 0 ? "সীমা শেষ" : <>আর <b className="text-ink">{bn(left)}</b>/{bn(p.perFamilyLimit)} {UNIT_LABEL[p.unit]}</>}</div>
+                </div>
+              </Link>
             ))}
           </div>
-          <div className="mt-1.5 text-[11px] text-ink-3">শেষ ৬ মাস</div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-[24px] border border-line bg-surface-solid p-3.5">
-          <Ring value={1 - usedRatio} size={48} stroke={5} color="var(--copper)">
-            <span className="num text-[11.5px] font-bold text-ink">{bn(Math.round((1 - usedRatio) * 100))}%</span>
-          </Ring>
-          <div className="min-w-0">
-            <div className="text-[12px] text-ink-3">এ মাসের বরাদ্দ</div>
-            <div className="text-[14px] font-bold leading-tight text-ink">{usedRatio >= 1 ? "সব নেওয়া হয়েছে" : "এখনও বাকি"}</div>
-          </div>
-        </div>
-        <Link href="/citizen/orders" className="flex items-center gap-3 rounded-[24px] border border-line bg-surface-solid p-3.5 transition-colors hover:bg-sunken">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-petrol-soft text-petrol"><PackageCheck className="h-[22px] w-[22px]" strokeWidth={1.8} /></span>
-          <div className="min-w-0">
-            <div className="text-[12px] text-ink-3">সংগ্রহ করেছেন</div>
-            <div className="num text-[18px] font-bold leading-tight text-ink">{bn(collected.length)} বার</div>
-          </div>
-        </Link>
+        </section>
       </Stagger>
 
-      {/* allowance carousel */}
       <Stagger i={4}>
-        <div className="mb-3 flex items-end justify-between">
-          <div>
-            <h2 className="text-[18px] font-bold tracking-tight text-ink">এ মাসে আর নিতে পারবেন</h2>
-            <p className="text-[12.5px] text-ink-3">{monthName(new Date().getMonth())} মাসের পরিবারপ্রতি সীমা</p>
-          </div>
-          <Link href="/citizen/products" className="flex items-center gap-0.5 text-[13px] font-semibold text-copper-deep dark:text-copper">সব <ChevronRight className="h-4 w-4" /></Link>
-        </div>
-        <div className="no-scrollbar -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1">
-          {allowance.map(({ product: p, left }) => (
-            <Link key={p.id} href="/citizen/products" className={cn("w-[132px] shrink-0 snap-start overflow-hidden rounded-[22px] border border-line bg-surface-solid transition-transform active:scale-[0.97]", left === 0 && "opacity-55")}>
-              <ProductArt product={p} size={56} className="h-[84px]" />
-              <div className="p-3">
-                <div className="truncate text-[13.5px] font-semibold text-ink">{p.name}</div>
-                <div className="mt-1 flex items-center gap-2">
-                  <Ring value={left / p.perFamilyLimit} size={22} stroke={3} />
-                  <span className="num text-[13px] text-ink-2"><b className="text-ink">{bn(left)}</b>/{bn(p.perFamilyLimit)} {UNIT_LABEL[p.unit]}</span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <SavingsCard orders={orders} />
       </Stagger>
 
       <Stagger i={5}>

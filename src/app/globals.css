@@ -725,3 +725,25 @@ h4 {
     transform: translateX(3px);
   }
 }
+@keyframes scan {
+  0% {
+    top: 4px;
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: calc(100% - 44px);
+    opacity: 0;
+  }
+}
+@keyframes text-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}

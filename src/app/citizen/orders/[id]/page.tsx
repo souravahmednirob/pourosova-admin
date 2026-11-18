@@ -2,12 +2,13 @@
 import { Suspense, use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { QRCodeSVG } from "qrcode.react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowLeft, Check, MapPin, ScanLine, Timer, X, PackageCheck } from "lucide-react";
+import { ArrowLeft, Banknote, Check, Maximize2, Navigation, ScanLine, X } from "lucide-react";
 import { CitizenFrame } from "@/components/citizen-app/frame";
 import { ProductArt } from "@/components/citizen-app/product-art";
 import { Stagger, useCountdown } from "@/components/citizen-app/ui";
+import { LiveQR, DeadlineRing, SlideToConfirm, FullscreenTicket } from "@/components/citizen-app/pickup";
+import { haptic } from "@/components/citizen-app/product-sheet";
 import { useMe } from "@/components/citizen-app/hooks";
 import { Pill } from "@/components/ui/primitives";
 import { useData, RuleError } from "@/store/data";
@@ -164,6 +165,8 @@ function OrderDetail({ id }: { id: string }) {
   const products = useData((s) => s.products);
   const points = useData((s) => s.points);
   const [sheet, setSheet] = useState(false);
+  const [full, setFull] = useState(false);
+  const [got, setGot] = useState<Set<string>>(new Set());
   const o = orders.find((x) => x.id === id);
   const [justCollected, setJustCollected] = useState(false);
   const prevStatus = useRef(o?.status);
@@ -212,50 +215,88 @@ function OrderDetail({ id }: { id: string }) {
         </Stagger>
       )}
 
-      {/* boarding-pass style pickup ticket */}
+      {/* pickup mode: ticket → show at counter → tick items → slide to confirm */}
       {o.status === "AWAITING_PICKUP" && (
-        <Stagger i={1} className="relative">
-          <div className="overflow-hidden rounded-[28px] shadow-[0_28px_56px_-26px_rgba(18,26,28,.6)]">
-            <div className="relative bg-[#0f1f24] px-5 pb-6 pt-5 text-white">
-              <div aria-hidden className="absolute inset-0 bg-[radial-gradient(90%_70%_at_100%_0%,rgba(201,126,82,.45),transparent_60%),radial-gradient(80%_70%_at_0%_100%,rgba(47,107,120,.6),transparent_60%)]" />
-              <div className="relative flex items-center justify-between">
-                <span className="text-[11.5px] font-semibold uppercase tracking-[0.2em] text-white/60">সংগ্রহের টিকিট</span>
-                <span className={cn("flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold", cd.urgent ? "bg-[#e07a6b]/25 text-[#ffb3a7]" : "bg-white/10 text-white/85")}><Timer className="h-3.5 w-3.5" /> {cd.text}</span>
+        <>
+          <Stagger i={1} className="relative overflow-hidden rounded-[30px] bg-[#0b171b] text-white shadow-[0_30px_60px_-28px_rgba(11,23,27,.9)]">
+            <div aria-hidden className="absolute inset-0 bg-[radial-gradient(90%_60%_at_100%_0%,rgba(201,126,82,.42),transparent_60%),radial-gradient(80%_60%_at_0%_100%,rgba(47,107,120,.55),transparent_60%)]" />
+            <div aria-hidden className="absolute inset-0 opacity-[.06] [background-image:linear-gradient(rgba(255,255,255,.6)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.6)_1px,transparent_1px)] [background-size:22px_22px]" />
+            <div className="relative px-5 pb-6 pt-5">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-[11.5px] font-semibold uppercase tracking-[0.22em] text-white/60"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8cc39a]" /> সংগ্রহ মোড</span>
+                <button type="button" onClick={() => setFull(true)} className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[12.5px] font-semibold ring-1 ring-white/15 transition-colors hover:bg-white/15"><Maximize2 className="h-3.5 w-3.5" /> বড় করে দেখান</button>
               </div>
-              <div className="relative mx-auto mt-5 w-fit rounded-[22px] bg-white p-3.5">
-                <QRCodeSVG value={`KPR:${o.orderNo}:${o.pickupCode}`} size={164} level="M" fgColor="#0f1f24" />
+              <div className="mt-6"><LiveQR value={`KPR:${o.orderNo}:${o.pickupCode}`} /></div>
+              <div className="mt-5 text-center text-[12px] text-white/55">কাউন্টারে QR দেখান বা কোডটি বলুন</div>
+              <div className="num mt-1.5 flex justify-center gap-1.5">
+                {(o.pickupCode ?? "").split("").map((d, i) => (
+                  <span key={i} className={cn("grid h-12 w-10 place-items-center rounded-xl bg-white/[.08] text-[26px] font-bold ring-1 ring-white/15 backdrop-blur", i === 2 && "mr-2")}>{bn(d)}</span>
+                ))}
               </div>
-              <div className="relative mt-4 text-center">
-                <div className="text-[12px] text-white/55">অথবা এই কোড বলুন</div>
-                <div className="num mt-1 flex justify-center gap-1.5">
-                  {(o.pickupCode ?? "").split("").map((d, i) => (
-                    <span key={i} className={cn("grid h-12 w-10 place-items-center rounded-xl bg-white/10 text-[26px] font-bold ring-1 ring-white/15", i === 2 && "mr-2")}>{bn(d)}</span>
-                  ))}
+              <div className="mt-6 flex items-center justify-between gap-3 rounded-[20px] bg-white/[.06] p-3 ring-1 ring-white/10">
+                <DeadlineRing start={o.approvedAt!} end={o.pickupDeadline!}>
+                  <div className={cn("text-[15px] font-bold", cd.urgent && "text-[#ffb3a7]")}>{cd.text}</div>
+                  <div className="text-[12px] text-white/55">শেষ সময় {fmtDateTime(o.pickupDeadline!)}</div>
+                </DeadlineRing>
+              </div>
+            </div>
+          </Stagger>
+
+          {/* step 1 — where */}
+          <Stagger i={2} className="rounded-[26px] border border-line bg-surface-solid p-4">
+            <div className="flex items-start gap-3">
+              <span className="num grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#121a1c] text-[14px] font-bold text-white dark:bg-[#ece7de] dark:text-[#121a1c]">১</span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[15px] font-bold text-ink">{point?.name}</div>
+                <div className="text-[13px] text-ink-3">{point?.address} · {point?.openHours}</div>
+                <div className="mt-3 flex gap-2">
+                  <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${point?.name}, ${point?.address}`)}`} target="_blank" rel="noreferrer" className="flex h-10 items-center gap-1.5 rounded-full bg-sunken px-4 text-[13.5px] font-semibold text-ink transition-colors hover:bg-[var(--line-strong)]"><Navigation className="h-4 w-4" strokeWidth={1.8} /> পথ দেখুন</a>
+                  <span className="flex h-10 items-center gap-1.5 rounded-full bg-copper-soft px-4 text-[13.5px] font-semibold text-copper-deep dark:text-copper"><Banknote className="h-4 w-4" strokeWidth={1.8} /> নগদ <span className="num">{taka(t.total)}</span></span>
                 </div>
               </div>
             </div>
-            {/* perforation */}
-            <div className="relative h-0 bg-surface-solid">
-              <span aria-hidden className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-[var(--canvas)]" />
-              <span aria-hidden className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-[var(--canvas)]" />
-              <span aria-hidden className="absolute left-5 right-5 top-0 border-t-2 border-dashed border-[var(--line-strong)]" />
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 bg-surface-solid px-5 pb-5 pt-5 text-[13px]">
-              <div className="col-span-2 flex items-start gap-2.5">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-copper" strokeWidth={1.8} />
-                <div><div className="font-bold text-ink">{point?.name}</div><div className="text-ink-3">{point?.address}</div></div>
+          </Stagger>
+
+          {/* step 2 — tick items as you receive them */}
+          <Stagger i={3} className="rounded-[26px] border border-line bg-surface-solid p-4">
+            <div className="flex items-start gap-3">
+              <span className="num grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#121a1c] text-[14px] font-bold text-white dark:bg-[#ece7de] dark:text-[#121a1c]">২</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="text-[15px] font-bold text-ink">পণ্য বুঝে নিন</div>
+                  <div className="num text-[12.5px] text-ink-3">{bn(got.size)}/{bn(o.items.length)} মিলেছে</div>
+                </div>
+                <div className="text-[13px] text-ink-3">হাতে পেলে প্রতিটায় টিক দিন</div>
+                <ul className="mt-3 flex flex-col gap-2">
+                  {o.items.map((it) => {
+                    const p = products.find((x) => x.id === it.productId);
+                    const on = got.has(it.productId);
+                    return (
+                      <li key={it.productId}>
+                        <button type="button" aria-pressed={on} onClick={() => { haptic(); setGot((g) => { const n = new Set(g); if (n.has(it.productId)) n.delete(it.productId); else n.add(it.productId); return n; }); }} className={cn("flex w-full items-center gap-3 rounded-[18px] border-2 p-2 pr-3 text-left transition-all duration-300", on ? "border-sage-2 bg-sage-soft" : "border-transparent bg-sunken")}>
+                          {p && <ProductArt product={p} size={30} className="h-11 w-11 shrink-0 rounded-[13px]" />}
+                          <span className="min-w-0 flex-1">
+                            <span className={cn("block truncate text-[14.5px] font-semibold", on ? "text-sage" : "text-ink")}>{p?.name}</span>
+                            <span className="num block text-[12.5px] text-ink-3">{bn(it.quantity)} {p ? UNIT_LABEL[p.unit] : ""}</span>
+                          </span>
+                          <span className={cn("grid h-7 w-7 place-items-center rounded-full border-2 transition-all duration-300 ease-[var(--ease-spring)]", on ? "scale-110 border-sage bg-sage text-white" : "border-line-strong")}>{on && <Check className="h-4 w-4" strokeWidth={3} />}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-              <div><div className="text-[11.5px] text-ink-3">খোলা থাকে</div><div className="font-semibold text-ink">{point?.openHours}</div></div>
-              <div><div className="text-[11.5px] text-ink-3">শেষ সময়</div><div className="font-semibold text-ink">{fmtDateTime(o.pickupDeadline!)}</div></div>
-              <div><div className="text-[11.5px] text-ink-3">নাম</div><div className="truncate font-semibold text-ink">{citizen.nameBn}</div></div>
-              <div><div className="text-[11.5px] text-ink-3">সাথে আনুন (নগদ)</div><div className="num text-[16px] font-bold text-ink">{taka(t.total)}</div></div>
             </div>
-          </div>
-          <button type="button" onClick={() => setSheet(true)} className="mt-4 flex h-[60px] w-full items-center justify-center gap-2 rounded-full bg-[#121a1c] text-[16px] font-bold text-white shadow-[0_18px_36px_-16px_rgba(18,26,28,.7)] transition-transform active:scale-[0.985] dark:bg-[#ece7de] dark:text-[#121a1c]">
-            <PackageCheck className="h-5 w-5" strokeWidth={1.8} /> পণ্য পেয়েছি, নিশ্চিত করুন
-          </button>
-          <p className="mt-2 text-center text-[12.5px] text-ink-3">পণ্য হাতে পাওয়ার পরই চাপুন</p>
-        </Stagger>
+          </Stagger>
+
+          {/* step 3 — confirm */}
+          <Stagger i={4}>
+            <SlideToConfirm label="টেনে নিশ্চিত করুন, পণ্য পেয়েছি" hint="আগে সব পণ্যে টিক দিন" disabled={got.size < o.items.length} onDone={() => setSheet(true)} />
+            <p className="mt-2 text-center text-[12.5px] text-ink-3">{got.size < o.items.length ? "সব পণ্য হাতে পেলে টিক দিয়ে নিশ্চিত করুন" : "এরপর কাউন্টারের কোডটি দিন"}</p>
+          </Stagger>
+
+          <FullscreenTicket open={full} onOpenChange={setFull} qr={`KPR:${o.orderNo}:${o.pickupCode}`} code={o.pickupCode ?? ""} orderNo={o.orderNo} name={citizen.nameBn} />
+        </>
       )}
 
       {o.status === "COLLECTED" && (

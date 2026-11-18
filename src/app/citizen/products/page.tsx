@@ -1,11 +1,13 @@
 "use client";
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Minus, Plus, Search, ShoppingBag, ArrowRight } from "lucide-react";
 import { CitizenFrame } from "@/components/citizen-app/frame";
 import { useAllowance } from "@/components/citizen-app/hooks";
 import { ProductArt } from "@/components/citizen-app/product-art";
 import { Stagger } from "@/components/citizen-app/ui";
+import { ProductSheet, haptic } from "@/components/citizen-app/product-sheet";
 import { useCitizen } from "@/store/citizen";
 import { useData } from "@/store/data";
 import { CATEGORY_LABEL, UNIT_LABEL, type ProductCategory } from "@/lib/types";
@@ -20,11 +22,11 @@ function AddStepper({ qty, max, onChange, name }: { qty: number; max: number; on
     <div className={cn("flex h-10 items-center overflow-hidden rounded-full transition-[width,background-color] duration-500 ease-[var(--ease-spring)]", open ? "w-[104px] bg-[#121a1c] dark:bg-[#ece7de]" : "w-10 bg-transparent")}>
       {open && (
         <>
-          <button type="button" onClick={() => onChange(qty - 1)} aria-label={`${name} কমান`} className="grid h-10 w-10 shrink-0 place-items-center text-white dark:text-[#121a1c]"><Minus className="h-4 w-4" strokeWidth={2.4} /></button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); haptic(); onChange(qty - 1); }} aria-label={`${name} কমান`} className="grid h-10 w-10 shrink-0 place-items-center text-white dark:text-[#121a1c]"><Minus className="h-4 w-4" strokeWidth={2.4} /></button>
           <span className="num flex-1 text-center text-[15px] font-bold text-white dark:text-[#121a1c]" aria-live="polite">{bn(qty)}</span>
         </>
       )}
-      <button type="button" onClick={() => onChange(qty + 1)} disabled={qty >= max} aria-label={`${name} যোগ করুন`} className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full transition-all disabled:opacity-30", open ? "text-white dark:text-[#121a1c]" : "grad-copper text-white shadow-[0_8px_18px_-8px_var(--glow)]")}>
+      <button type="button" onClick={(e) => { e.stopPropagation(); haptic(); onChange(qty + 1); }} disabled={qty >= max} aria-label={`${name} যোগ করুন`} className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full transition-all disabled:opacity-30", open ? "text-white dark:text-[#121a1c]" : "grad-copper text-white shadow-[0_8px_18px_-8px_var(--glow)]")}>
         <Plus className="h-[18px] w-[18px]" strokeWidth={2.4} />
       </button>
     </div>
@@ -38,6 +40,19 @@ function Products() {
   const lowPct = useData((s) => s.settings.lowStockPct);
   const [cat, setCat] = useState<ProductCategory | "ALL">("ALL");
   const [q, setQ] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const params = useSearchParams();
+  const router = useRouter();
+
+  // /citizen/products?p=<id> opens that product's sheet (used from the home screen)
+  useEffect(() => {
+    const id = params.get("p");
+    if (id) {
+      queueMicrotask(() => setOpenId(id));
+      router.replace("/citizen/products");
+    }
+  }, [params, router]);
+  const open = allowance.find((a) => a.product.id === openId);
 
   const cats = useMemo(() => ["ALL", ...new Set(allowance.map((a) => a.product.category))] as (ProductCategory | "ALL")[], [allowance]);
   const list = allowance.filter((a) => (cat === "ALL" || a.product.category === cat) && (!q || a.product.name.includes(q)));
@@ -75,9 +90,10 @@ function Products() {
           const blocked = max === 0 && qty === 0;
           return (
             <Stagger key={p.id} i={i + 3}>
-              <article className={cn("group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-line bg-surface-solid transition-[transform,box-shadow] duration-300", qty > 0 && "ring-2 ring-copper/60", !blocked && "hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]")}>
+              <article onClick={() => setOpenId(p.id)} onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) setOpenId(p.id); }} tabIndex={0} aria-label={`${p.name}, বিস্তারিত`} className={cn("group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[24px] border border-line bg-surface-solid transition-[transform,box-shadow] duration-300 active:scale-[0.98]", qty > 0 && "ring-2 ring-copper/60", !blocked && "hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]")}>
                 <div className="relative">
                   <ProductArt product={p} size={76} className={cn("h-[118px] transition-transform duration-500", blocked && "grayscale")} />
+                  {qty > 0 && <span key={qty} className="num absolute left-2.5 top-2.5 grid h-7 min-w-7 place-items-center rounded-full bg-copper px-2 text-[13px] font-bold text-white shadow-[0_6px_14px_-6px_var(--glow)] animate-[modal-pop_320ms_var(--ease-spring)]">{bn(qty)}</span>}
                   {st !== "OK" && <span className={cn("absolute right-2.5 top-2.5 rounded-full px-2 py-0.5 text-[11px] font-bold backdrop-blur", st === "OUT" ? "bg-brick text-white" : "bg-ochre-soft text-ochre")}>{st === "OUT" ? "এখন নেই" : "অল্প আছে"}</span>}
                 </div>
                 <div className="flex flex-1 flex-col p-3.5">
@@ -100,12 +116,14 @@ function Products() {
       </div>
       {list.length === 0 && <div className="py-16 text-center text-[14px] text-ink-3">কিছু পাওয়া যায়নি</div>}
 
+      <ProductSheet product={open?.product ?? null} left={open?.left ?? 0} inCart={open ? cart[open.product.id] ?? 0 : 0} onClose={() => setOpenId(null)} onSave={(n) => { if (open) setQty(open.product.id, n); setOpenId(null); }} />
+
       {/* floating basket */}
       <div className={cn("fixed bottom-[92px] left-1/2 z-20 w-[calc(100%-32px)] max-w-[398px] -translate-x-1/2 transition-[opacity,transform] duration-500 ease-[var(--ease-spring)] sm:absolute", lines.length ? "opacity-100" : "pointer-events-none translate-y-6 opacity-0")}>
         <Link href="/citizen/cart" className="grad-copper flex items-center gap-3 rounded-[22px] p-2 pl-3 text-white shadow-[0_18px_36px_-14px_var(--glow)]">
           <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-white/15">
             <ShoppingBag className="h-5 w-5" strokeWidth={1.8} />
-            <span className="num absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-white px-1 text-[11px] font-bold text-copper-deep">{bn(count)}</span>
+            <span key={count} className="num absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-white px-1 text-[11px] font-bold text-copper-deep animate-[modal-pop_360ms_var(--ease-spring)]">{bn(count)}</span>
           </span>
           <span className="min-w-0 flex-1">
             <span className="num block text-[16px] font-bold leading-tight">{taka(total)}</span>
@@ -121,7 +139,9 @@ function Products() {
 export default function CitizenProductsPage() {
   return (
     <CitizenFrame>
-      <Products />
+      <Suspense>
+        <Products />
+      </Suspense>
     </CitizenFrame>
   );
 }
