@@ -8,13 +8,12 @@ import { useMe, useAllowance } from "@/components/citizen-app/hooks";
 import { WalletCard } from "@/components/citizen-app/wallet-card";
 import { SavingsCard } from "@/components/citizen-app/savings-card";
 import { CartButton } from "@/components/citizen-app/cart-bubble";
-import { ProductArt } from "@/components/citizen-app/product-art";
 import { Stagger, greeting, useCountdown } from "@/components/citizen-app/ui";
 import { useCitizen } from "@/store/citizen";
 import { useData } from "@/store/data";
-import { UNIT_LABEL, type Order } from "@/lib/types";
+import type { Order } from "@/lib/types";
 import { orderTotals } from "@/lib/orders";
-import { bn, fmtDateTime, monthName } from "@/lib/bn";
+import { bn, fmtDateTime } from "@/lib/bn";
 import { cn } from "@/lib/utils";
 
 /** iOS "live activity"-style strip for the order that is in progress. */
@@ -104,32 +103,11 @@ function Home() {
         </Stagger>
       )}
 
-      {/* this month's allowance — plain: product and how much is left */}
       <Stagger i={3}>
-        <section className="rounded-[28px] border border-line bg-surface-solid p-5">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-[18px] font-bold tracking-tight text-ink">এ মাসে নিতে পারবেন</h2>
-            <span className="text-[12.5px] text-ink-3">{monthName(new Date().getMonth())}</span>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {allowance.map(({ product: p, left }) => (
-              <Link key={p.id} href={`/citizen/products?p=${p.id}`} className={cn("flex items-center gap-2.5 rounded-[18px] bg-sunken p-2 transition-transform active:scale-[0.97]", left === 0 && "opacity-45")}>
-                <ProductArt product={p} size={30} className="h-11 w-11 shrink-0 rounded-[14px]" />
-                <div className="min-w-0">
-                  <div className="truncate text-[13.5px] font-semibold text-ink">{p.name}</div>
-                  <div className="num whitespace-nowrap text-[13px] text-ink-2">{left === 0 ? "নেওয়া হয়েছে" : <><b className="text-ink">{bn(left)}</b> {UNIT_LABEL[p.unit]}</>}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      </Stagger>
-
-      <Stagger i={4}>
         <SavingsCard orders={orders} />
       </Stagger>
 
-      <Stagger i={5}>
+      <Stagger i={4}>
         <Link href="/citizen/products" className={cn("group relative flex h-[60px] items-center justify-between overflow-hidden rounded-full bg-[#121a1c] pl-6 pr-2 text-white shadow-[0_18px_36px_-16px_rgba(18,26,28,.7)] transition-transform active:scale-[0.985] dark:bg-[#ece7de] dark:text-[#121a1c]", canBuy === 0 && "pointer-events-none opacity-50")}>
           <span className="flex items-center gap-2 text-[16px] font-bold"><Sparkles className="h-[18px] w-[18px] text-[#e8ab86] dark:text-copper" strokeWidth={2} /> {canBuy === 0 ? "এ মাসের সব বরাদ্দ নেওয়া হয়েছে" : "পণ্য বেছে নিন"}</span>
           <span className="grad-copper grid h-11 w-11 place-items-center rounded-full text-white transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight className="h-5 w-5" strokeWidth={2.4} /></span>
