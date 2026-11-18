@@ -7,10 +7,10 @@ import { Home, ShoppingBasket, ReceiptText, WifiOff } from "lucide-react";
 import { Aurora } from "@/components/shell/aurora";
 import { ThemeSync } from "@/components/shell/theme";
 import { useOnline } from "@/components/agent/agent-frame";
+import { CartBubble } from "./cart-bubble";
 import { useCitizen } from "@/store/citizen";
 import { useData } from "@/store/data";
 import { useHydrated, useUI } from "@/store/ui";
-import { bn } from "@/lib/bn";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -25,7 +25,6 @@ export function CitizenFrame({ children, requireAuth = true, tabs = true }: { ch
   const router = useRouter();
   const pathname = usePathname();
   const citizenId = useCitizen((s) => s.citizenId);
-  const cartCount = useCitizen((s) => Object.keys(s.cart).length);
   const citizenOk = useData((s) => !!s.citizens.find((c) => c.id === citizenId && c.status === "APPROVED"));
   const logout = useCitizen((s) => s.logout);
   const theme = useUI((s) => s.theme);
@@ -59,6 +58,7 @@ export function CitizenFrame({ children, requireAuth = true, tabs = true }: { ch
           <div className={cn("flex flex-1 flex-col", tabs && ready && "pb-[104px]")}>
             {ready ? children : <div className="grid flex-1 place-items-center"><div className="h-9 w-9 animate-spin rounded-full border-2 border-line-strong border-t-copper" /></div>}
           </div>
+          {tabs && ready && <CartBubble />}
           {tabs && ready && (
             <nav aria-label="প্রধান মেনু" className="fixed bottom-4 left-1/2 z-30 w-[calc(100%-32px)] max-w-[398px] -translate-x-1/2 sm:absolute">
               <div className="relative grid grid-cols-3 rounded-full border border-[var(--line)] bg-[var(--surface-strong)] p-1.5 shadow-[0_18px_40px_-14px_rgba(18,26,28,.35)] backdrop-blur-xl">
@@ -70,7 +70,6 @@ export function CitizenFrame({ children, requireAuth = true, tabs = true }: { ch
                     <Link key={href} href={href} aria-current={on ? "page" : undefined} className={cn("relative z-10 flex h-12 items-center justify-center gap-2 rounded-full text-[13.5px] font-semibold transition-colors duration-300", on ? "text-white dark:text-[#121a1c]" : "text-ink-3 hover:text-ink")}>
                       <Icon className="h-[20px] w-[20px] shrink-0" strokeWidth={on ? 2.1 : 1.8} />
                       <span className={cn("overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-500 ease-[var(--ease-out)]", on ? "max-w-[90px] opacity-100" : "max-w-0 opacity-0")}>{label}</span>
-                      {href === "/citizen/products" && cartCount > 0 && <span className="num absolute right-[22%] top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-copper px-1 text-[10.5px] font-bold text-white ring-2 ring-[var(--surface-solid)]">{bn(cartCount)}</span>}
                     </Link>
                   );
                 })}

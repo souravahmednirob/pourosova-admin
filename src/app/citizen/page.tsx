@@ -8,12 +8,12 @@ import { useMe, useAllowance } from "@/components/citizen-app/hooks";
 import { WalletCard } from "@/components/citizen-app/wallet-card";
 import { SavingsCard } from "@/components/citizen-app/savings-card";
 import { ProductArt } from "@/components/citizen-app/product-art";
-import { Ring, Stagger, greeting, useCountdown } from "@/components/citizen-app/ui";
+import { Stagger, greeting, useCountdown } from "@/components/citizen-app/ui";
 import { useCitizen } from "@/store/citizen";
 import { useData } from "@/store/data";
 import { UNIT_LABEL, type Order } from "@/lib/types";
 import { orderTotals } from "@/lib/orders";
-import { bn, taka, fmtDateTime, monthName } from "@/lib/bn";
+import { bn, fmtDateTime, monthName } from "@/lib/bn";
 import { cn } from "@/lib/utils";
 
 /** iOS "live activity"-style strip for the order that is in progress. */
@@ -55,10 +55,6 @@ function Home() {
   const ward = wards.find((w) => w.id === citizen.wardId);
   const firstName = citizen.nameBn.replace(/^(মোছাঃ|মোঃ)\s*/, "").split(" ")[0];
 
-  // this month's usage in taka terms gives a single, readable "how much of my allowance is used" number
-  const totalLimitValue = allowance.reduce((s, a) => s + a.product.perFamilyLimit * a.product.municipalPrice, 0);
-  const usedValue = allowance.reduce((s, a) => s + a.used * a.product.municipalPrice, 0);
-  const usedRatio = totalLimitValue ? usedValue / totalLimitValue : 0;
   const canBuy = allowance.filter((a) => a.left > 0 && a.product.stock > 0).length;
 
   return (
@@ -106,27 +102,20 @@ function Home() {
         </Stagger>
       )}
 
-      {/* this month's allowance — one card, one message */}
+      {/* this month's allowance — plain: product and how much is left */}
       <Stagger i={3}>
-        <section className="relative overflow-hidden rounded-[28px] border border-line bg-surface-solid">
-          <div className="flex items-center gap-4 p-5 pb-4">
-            <Ring value={1 - usedRatio} size={64} stroke={6} color="var(--copper)">
-              <span className="num text-[14px] font-bold text-ink">{bn(Math.round((1 - usedRatio) * 100))}%</span>
-            </Ring>
-            <div className="min-w-0">
-              <div className="text-[13px] text-ink-3">{monthName(new Date().getMonth())} মাসের বরাদ্দ</div>
-              <div className="text-[18px] font-bold leading-snug tracking-tight text-ink">
-                {usedRatio >= 1 ? "এ মাসের সব নেওয়া হয়েছে" : <>আরও <span className="num text-copper-deep dark:text-copper">{taka(totalLimitValue - usedValue)}</span> মূল্যের পণ্য নিতে পারবেন</>}
-              </div>
-            </div>
+        <section className="rounded-[28px] border border-line bg-surface-solid p-5">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-[18px] font-bold tracking-tight text-ink">এ মাসে নিতে পারবেন</h2>
+            <span className="text-[12.5px] text-ink-3">{monthName(new Date().getMonth())}</span>
           </div>
-          <div className="no-scrollbar flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5 pb-5">
+          <div className="mt-3 grid grid-cols-2 gap-2">
             {allowance.map(({ product: p, left }) => (
-              <Link key={p.id} href={`/citizen/products?p=${p.id}`} className={cn("flex w-[164px] shrink-0 snap-start items-center gap-2.5 rounded-[18px] bg-sunken p-2 pr-3 transition-transform active:scale-[0.97]", left === 0 && "opacity-50")}>
-                <ProductArt product={p} size={32} className="h-11 w-11 shrink-0 rounded-[14px]" />
+              <Link key={p.id} href={`/citizen/products?p=${p.id}`} className={cn("flex items-center gap-2.5 rounded-[18px] bg-sunken p-2 transition-transform active:scale-[0.97]", left === 0 && "opacity-45")}>
+                <ProductArt product={p} size={30} className="h-11 w-11 shrink-0 rounded-[14px]" />
                 <div className="min-w-0">
-                  <div className="truncate text-[13px] font-semibold text-ink">{p.name}</div>
-                  <div className="num whitespace-nowrap text-[12px] text-ink-3">{left === 0 ? "সীমা শেষ" : <>আর <b className="text-ink">{bn(left)}</b>/{bn(p.perFamilyLimit)} {UNIT_LABEL[p.unit]}</>}</div>
+                  <div className="truncate text-[13.5px] font-semibold text-ink">{p.name}</div>
+                  <div className="num whitespace-nowrap text-[13px] text-ink-2">{left === 0 ? "নেওয়া হয়েছে" : <><b className="text-ink">{bn(left)}</b> {UNIT_LABEL[p.unit]}</>}</div>
                 </div>
               </Link>
             ))}

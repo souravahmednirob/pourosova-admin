@@ -1,13 +1,13 @@
 "use client";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Minus, Plus, Search, ShoppingBag, ArrowRight } from "lucide-react";
+import { Minus, Plus, Search } from "lucide-react";
 import { CitizenFrame } from "@/components/citizen-app/frame";
 import { useAllowance } from "@/components/citizen-app/hooks";
 import { ProductArt } from "@/components/citizen-app/product-art";
 import { Stagger } from "@/components/citizen-app/ui";
 import { ProductSheet, haptic } from "@/components/citizen-app/product-sheet";
+import { flyToCart } from "@/components/citizen-app/cart-bubble";
 import { useCitizen } from "@/store/citizen";
 import { useData } from "@/store/data";
 import { CATEGORY_LABEL, UNIT_LABEL, type ProductCategory } from "@/lib/types";
@@ -26,7 +26,7 @@ function AddStepper({ qty, max, onChange, name }: { qty: number; max: number; on
           <span className="num flex-1 text-center text-[15px] font-bold text-white dark:text-[#121a1c]" aria-live="polite">{bn(qty)}</span>
         </>
       )}
-      <button type="button" onClick={(e) => { e.stopPropagation(); haptic(); onChange(qty + 1); }} disabled={qty >= max} aria-label={`${name} যোগ করুন`} className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full transition-all disabled:opacity-30", open ? "text-white dark:text-[#121a1c]" : "grad-copper text-white shadow-[0_8px_18px_-8px_var(--glow)]")}>
+      <button type="button" onClick={(e) => { e.stopPropagation(); haptic(); flyToCart(e.currentTarget); onChange(qty + 1); }} disabled={qty >= max} aria-label={`${name} যোগ করুন`} className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full transition-all disabled:opacity-30", open ? "text-white dark:text-[#121a1c]" : "grad-copper text-white shadow-[0_8px_18px_-8px_var(--glow)]")}>
         <Plus className="h-[18px] w-[18px]" strokeWidth={2.4} />
       </button>
     </div>
@@ -56,13 +56,9 @@ function Products() {
 
   const cats = useMemo(() => ["ALL", ...new Set(allowance.map((a) => a.product.category))] as (ProductCategory | "ALL")[], [allowance]);
   const list = allowance.filter((a) => (cat === "ALL" || a.product.category === cat) && (!q || a.product.name.includes(q)));
-  const lines = allowance.filter((a) => cart[a.product.id]);
-  const count = lines.reduce((s, a) => s + cart[a.product.id], 0);
-  const total = lines.reduce((s, a) => s + cart[a.product.id] * a.product.municipalPrice, 0);
-  const saving = lines.reduce((s, a) => s + cart[a.product.id] * (a.product.marketPrice - a.product.municipalPrice), 0);
 
   return (
-    <div className={cn("flex flex-col transition-[padding] duration-500", lines.length ? "pb-[96px]" : "pb-4")}>
+    <div className="flex flex-col pb-4">
       <div className="px-5 pt-6">
         <Stagger i={0}>
           <h1 className="text-[28px] font-bold leading-tight tracking-tight text-ink">পণ্য বেছে নিন</h1>
@@ -116,22 +112,8 @@ function Products() {
       </div>
       {list.length === 0 && <div className="py-16 text-center text-[14px] text-ink-3">কিছু পাওয়া যায়নি</div>}
 
-      <ProductSheet product={open?.product ?? null} left={open?.left ?? 0} inCart={open ? cart[open.product.id] ?? 0 : 0} onClose={() => setOpenId(null)} onSave={(n) => { if (open) setQty(open.product.id, n); setOpenId(null); }} />
+      <ProductSheet product={open?.product ?? null} left={open?.left ?? 0} inCart={open ? cart[open.product.id] ?? 0 : 0} onClose={() => setOpenId(null)} onSave={(n) => { if (open) { if (n > (cart[open.product.id] ?? 0)) flyToCart(document.activeElement); setQty(open.product.id, n); } setOpenId(null); }} />
 
-      {/* floating basket */}
-      <div className={cn("fixed bottom-[92px] left-1/2 z-20 w-[calc(100%-32px)] max-w-[398px] -translate-x-1/2 transition-[opacity,transform] duration-500 ease-[var(--ease-spring)] sm:absolute", lines.length ? "opacity-100" : "pointer-events-none translate-y-6 opacity-0")}>
-        <Link href="/citizen/cart" className="grad-copper flex items-center gap-3 rounded-[22px] p-2 pl-3 text-white shadow-[0_18px_36px_-14px_var(--glow)]">
-          <span className="relative grid h-11 w-11 place-items-center rounded-2xl bg-white/15">
-            <ShoppingBag className="h-5 w-5" strokeWidth={1.8} />
-            <span key={count} className="num absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-white px-1 text-[11px] font-bold text-copper-deep animate-[modal-pop_360ms_var(--ease-spring)]">{bn(count)}</span>
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="num block text-[16px] font-bold leading-tight">{taka(total)}</span>
-            <span className="num block text-[12px] text-white/85">সাশ্রয় {taka(saving)}</span>
-          </span>
-          <span className="flex h-11 items-center gap-1.5 rounded-2xl bg-white px-4 text-[14px] font-bold text-copper-deep">পরবর্তী <ArrowRight className="h-4 w-4" strokeWidth={2.4} /></span>
-        </Link>
-      </div>
     </div>
   );
 }
