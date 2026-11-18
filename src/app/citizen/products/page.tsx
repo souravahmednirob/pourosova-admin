@@ -7,7 +7,7 @@ import { useAllowance } from "@/components/citizen-app/hooks";
 import { ProductArt } from "@/components/citizen-app/product-art";
 import { Stagger } from "@/components/citizen-app/ui";
 import { ProductSheet, haptic } from "@/components/citizen-app/product-sheet";
-import { flyToCart } from "@/components/citizen-app/cart-bubble";
+import { flyToCart, CartButton } from "@/components/citizen-app/cart-bubble";
 import { useCitizen } from "@/store/citizen";
 import { useData } from "@/store/data";
 import { CATEGORY_LABEL, UNIT_LABEL, type ProductCategory } from "@/lib/types";
@@ -59,12 +59,17 @@ function Products() {
 
   return (
     <div className="flex flex-col pb-4">
-      <div className="px-5 pt-6">
-        <Stagger i={0}>
-          <h1 className="text-[28px] font-bold leading-tight tracking-tight text-ink">পণ্য বেছে নিন</h1>
-          <p className="mt-1 text-[14px] text-ink-3">বাজারের চেয়ে কম দামে, পরিবারের মাসিক সীমার মধ্যে</p>
+      <div className="sticky top-0 z-20 -mb-2 bg-[var(--canvas)]/85 px-5 pb-2 pt-6 backdrop-blur-xl">
+        <Stagger i={0} className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-[28px] font-bold leading-tight tracking-tight text-ink">পণ্য বেছে নিন</h1>
+            <p className="mt-1 text-[14px] text-ink-3">বাজারের চেয়ে কম দামে, পরিবারের মাসিক সীমার মধ্যে</p>
+          </div>
+          <CartButton className="mt-1" />
         </Stagger>
-        <Stagger i={1} className="relative mt-4">
+      </div>
+      <div className="px-5 pt-2">
+        <Stagger i={1} className="relative mt-2">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-4" strokeWidth={1.8} />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="পণ্য খুঁজুন" className="h-12 w-full rounded-full border border-line bg-surface-solid pl-11 pr-4 text-[15px] text-ink outline-none transition-shadow placeholder:text-ink-4 focus:border-copper focus:shadow-[0_0_0_4px_var(--copper-soft)]" />
         </Stagger>

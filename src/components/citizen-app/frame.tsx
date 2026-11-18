@@ -7,7 +7,7 @@ import { Home, ShoppingBasket, ReceiptText, WifiOff } from "lucide-react";
 import { Aurora } from "@/components/shell/aurora";
 import { ThemeSync } from "@/components/shell/theme";
 import { useOnline } from "@/components/agent/agent-frame";
-import { CartBubble } from "./cart-bubble";
+import { FlyLayer } from "./cart-bubble";
 import { useCitizen } from "@/store/citizen";
 import { useData } from "@/store/data";
 import { useHydrated, useUI } from "@/store/ui";
@@ -49,7 +49,7 @@ export function CitizenFrame({ children, requireAuth = true, tabs = true }: { ch
       <Aurora />
       <ThemeSync />
       <div className="relative z-10 flex min-h-dvh justify-center sm:py-6">
-        <div className="relative flex w-full max-w-[430px] flex-col overflow-hidden bg-[var(--canvas)] sm:min-h-[860px] sm:rounded-[32px] sm:shadow-[var(--shadow-lg)] sm:ring-1 sm:ring-[var(--line)]">
+        <div className="relative flex w-full max-w-[430px] flex-col overflow-clip bg-[var(--canvas)] sm:min-h-[860px] sm:rounded-[32px] sm:shadow-[var(--shadow-lg)] sm:ring-1 sm:ring-[var(--line)]">
           {!online && (
             <div className="flex items-center justify-center gap-2 bg-ochre-soft px-4 py-2 text-[13px] font-medium text-ochre" role="status">
               <WifiOff className="h-4 w-4" strokeWidth={1.8} /> ইন্টারনেট নেই — কিছু তথ্য পুরোনো হতে পারে
@@ -58,7 +58,7 @@ export function CitizenFrame({ children, requireAuth = true, tabs = true }: { ch
           <div className={cn("flex flex-1 flex-col", tabs && ready && "pb-[104px]")}>
             {ready ? children : <div className="grid flex-1 place-items-center"><div className="h-9 w-9 animate-spin rounded-full border-2 border-line-strong border-t-copper" /></div>}
           </div>
-          {tabs && ready && <CartBubble />}
+          {tabs && ready && <FlyLayer />}
           {tabs && ready && (
             <nav aria-label="প্রধান মেনু" className="fixed bottom-4 left-1/2 z-30 w-[calc(100%-32px)] max-w-[398px] -translate-x-1/2 sm:absolute">
               <div className="relative grid grid-cols-3 rounded-full border border-[var(--line)] bg-[var(--surface-strong)] p-1.5 shadow-[0_18px_40px_-14px_rgba(18,26,28,.35)] backdrop-blur-xl">

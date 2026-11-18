@@ -7,6 +7,7 @@ import { CitizenFrame } from "@/components/citizen-app/frame";
 import { useMe, useAllowance } from "@/components/citizen-app/hooks";
 import { WalletCard } from "@/components/citizen-app/wallet-card";
 import { SavingsCard } from "@/components/citizen-app/savings-card";
+import { CartButton } from "@/components/citizen-app/cart-bubble";
 import { ProductArt } from "@/components/citizen-app/product-art";
 import { Stagger, greeting, useCountdown } from "@/components/citizen-app/ui";
 import { useCitizen } from "@/store/citizen";
@@ -66,6 +67,7 @@ function Home() {
           <div className="text-[26px] font-bold leading-tight tracking-tight text-ink">{firstName}</div>
         </div>
         <div className="flex items-center gap-2">
+          <CartButton />
           <Popover.Root onOpenChange={(o) => { if (!o) { myNotes.forEach((n) => !n.read && markRead(n.id)); setTick((t) => t + 1); } }}>
             <Popover.Trigger asChild>
               <button type="button" aria-label={`বার্তা${unread ? `, ${bn(unread)}টি নতুন` : ""}`} className="relative grid h-11 w-11 place-items-center rounded-full border border-line-strong bg-surface-solid text-ink transition-colors hover:bg-sunken">

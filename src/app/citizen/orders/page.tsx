@@ -6,6 +6,7 @@ import { CitizenFrame } from "@/components/citizen-app/frame";
 import { useMe } from "@/components/citizen-app/hooks";
 import { ProductArt } from "@/components/citizen-app/product-art";
 import { Stagger } from "@/components/citizen-app/ui";
+import { CartButton } from "@/components/citizen-app/cart-bubble";
 import { Pill } from "@/components/ui/primitives";
 import { useData } from "@/store/data";
 import { ORDER_STATUS_LABEL } from "@/lib/types";
@@ -26,8 +27,9 @@ function Orders() {
 
   return (
     <div className="flex flex-col gap-5 px-5 pb-4 pt-6">
-      <Stagger i={0}>
+      <Stagger i={0} className="flex items-center justify-between">
         <h1 className="text-[28px] font-bold leading-tight tracking-tight text-ink">অর্ডার</h1>
+        <CartButton />
       </Stagger>
 
       <Stagger i={1} className="grid grid-cols-2 gap-3">
